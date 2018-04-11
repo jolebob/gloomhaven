@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <climits>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -7,6 +5,12 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#pragma GCC target("avx")
+#pragma GCC optimize("O3")
+#pragma GCC optimize("omit-frame-pointer")
+#pragma GCC optimize("unroll-all-loops")
+#pragma GCC optimize("inline")
 
 using namespace std;
 #define ATTACK (2)
@@ -28,6 +32,13 @@ static map<cardType, string> cardTypeText = {{MINUS_ONE, "-1"},
                                              {PLUS_ONE_AND_DRAW, "+1&Draw"}};
 
 static int attack_s = ATTACK;
+
+template <typename ContainerType>
+void SwapAndPopAtIndex(ContainerType &container, size_t index) {
+  if ((index + 1) >= container.size()) return;
+  swap(container[index], container.back());
+  container.pop_back();
+}
 
 int addAttack(int a, cardType c) {
   switch (c) {
@@ -57,7 +68,7 @@ int addAttack(int a, cardType c) {
 cardType drawCard(int &attack, vector<cardType> &cards, vector<int> &counters) {
   int      k    = rand() % cards.size();
   cardType card = cards[k];
-  cards.erase(cards.begin() + k);
+  SwapAndPopAtIndex(cards, k);
   counters[card]++;
   attack = addAttack(attack, card);
   return card;
@@ -85,7 +96,7 @@ void printSimuResults(vector<int> &counters, int nbTurn, double totalAttack) {
   cout << "average attack = " << totalAttack / nbTurn << endl << endl;
 }
 
-void simuCards(int nbTurn, vector<cardType> ref_cards) {
+void simuCards(int nbTurn, vector<cardType> &ref_cards) {
   cout << "SIMU FOR [";
   for (auto c : ref_cards) {
     cout << cardTypeText.at(c) << ",";
