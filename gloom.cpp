@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -24,6 +26,8 @@ static map<cardType, string> cardTypeText = {{MINUS_ONE, "-1"},
                                              {DOUBLE, "x2"},
                                              {DRAW, "Draw"},
                                              {PLUS_ONE_AND_DRAW, "+1&Draw"}};
+
+static int attack_s = ATTACK;
 
 int addAttack(int a, cardType c) {
   switch (c) {
@@ -50,6 +54,37 @@ int addAttack(int a, cardType c) {
   }
 }
 
+cardType drawCard(int &attack, vector<cardType> &cards, vector<int> &counters) {
+  int      k    = rand() % cards.size();
+  cardType card = cards[k];
+  cards.erase(cards.begin() + k);
+  counters[card]++;
+  attack = addAttack(attack, card);
+  return card;
+}
+
+void printSimuResults(vector<int> &counters, int nbTurn, double totalAttack) {
+  cout << "  >> -1         -2         +1         +2         +0         Miss       x2         Draw       +1&Draw"
+       << endl;
+  cout << "  >> ";
+  int nc = 0;
+  for (auto c : counters) {
+    cout << left << setw(10) << c << " ";
+    nc += c;
+  }
+  cout << endl;
+  cout << "  >> ";
+  for (auto c : counters) {
+    double       p = ((double)c / (double)nc)       *100;
+    stringstream stream;
+    stream << fixed << setprecision(2) << p << "%";
+    string s = stream.str();
+    cout << left << setw(10) << s << " ";
+  }
+  cout << endl;
+  cout << "average attack = " << totalAttack / nbTurn << endl << endl;
+}
+
 void simuCards(int nbTurn, vector<cardType> ref_cards) {
   cout << "SIMU FOR [";
   for (auto c : ref_cards) {
@@ -60,42 +95,28 @@ void simuCards(int nbTurn, vector<cardType> ref_cards) {
   vector<int>      counters    = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   double           totalAttack = 0;
   for (int i = 0; i < nbTurn; i++) {
-    int      attack = ATTACK;
-    int      k      = rand() % cards.size();
-    cardType card   = cards[k];
-    counters[card]++;
-    attack = addAttack(attack, card);
+    int      attack = attack_s;
+    cardType card   = drawCard(attack, cards, counters);
     while (card == DRAW || card == PLUS_ONE_AND_DRAW) {
-      cards.erase(cards.begin() + k);
-      k    = rand() % cards.size();
-      card = cards[k];
-      counters[card]++;
-      attack = addAttack(attack, card);
+      card = drawCard(attack, cards, counters);
     }
     if (card == MISS || card == DOUBLE) {
       cards = ref_cards;
-    } else {
-      cards.erase(cards.begin() + k);
     }
     totalAttack += attack;
   }
-  cout << "  >> ";
-  for (auto c : counters) {
-    cout << c << " ";
-  }
-  cout << endl;
-  cout << "average attack = " << totalAttack / nbTurn << endl << endl;
+
+  printSimuResults(counters, nbTurn, totalAttack);
 }
 
 int main() {
   int         nbTurn;
   vector<int> inputNbCards = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   cout << "*** GLOOMHAVEN ATTACK DECK CARDS SIMULATOR ***" << endl << endl;
-  cout << "Simulation will be done with basic Attack +2 action" << endl;
   cout << "Please enter the following (one line input) :" << endl;
-  cout << "  Number of : SimulationTurn , -1 , -2 , +1 , +2 , +0 , Miss , x2 , Draw , +1&Draw" << endl << endl;
-  cin >> nbTurn >> inputNbCards[0] >> inputNbCards[1] >> inputNbCards[2] >> inputNbCards[3] >> inputNbCards[4] >>
-      inputNbCards[5] >> inputNbCards[6] >> inputNbCards[7] >> inputNbCards[8];
+  cout << "  Number of : SimulationTurn , attack, -1 , -2 , +1 , +2 , +0 , Miss , x2 , Draw , +1&Draw" << endl << endl;
+  cin >> nbTurn >> attack_s >> inputNbCards[0] >> inputNbCards[1] >> inputNbCards[2] >> inputNbCards[3] >>
+      inputNbCards[4] >> inputNbCards[5] >> inputNbCards[6] >> inputNbCards[7] >> inputNbCards[8];
   cin.ignore();
   vector<vector<cardType> > ref_cards;
   ref_cards.push_back(cards_basic);
